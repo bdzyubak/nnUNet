@@ -179,7 +179,7 @@ Here is what the dataset.json should look like at the example of the Dataset005_
        "TZ": 2
      }, 
      "numTraining": 32, 
-     "file_ending": ".nii.gz"
+     "file_ending": ".nii.gz",
      "overwrite_image_reader_writer": "SimpleITKIO"  # optional! If not provided nnU-Net will automatically determine the ReaderWriter
      }
 

@@ -1,5 +1,5 @@
 import os
-from utils.os_utilities import check_conda_installed
+from utils.os_utilities import run_command, check_conda_installed
 
 
 def main():
@@ -7,11 +7,12 @@ def main():
 
     env_name = 'nnunet'
     conda_create = 'conda create -n ' + env_name + ' -y'
-    os.system(conda_create)
+    retcode, text = run_command(conda_create)
 
-    setup_path = os.path.join(os.path.dirname(__file__), 'setup.py .')
+    setup_path = "pip install -e " + os.path.join(os.path.dirname(__file__), '.')
+
     conda_setup = 'conda run -n ' + env_name + ' ' + setup_path
-    os.system(conda_setup)
+    retcode, text = run_command(conda_setup)
     print(f'Conda environemnt ' + env_name + ' installed successfully.')
 
 
