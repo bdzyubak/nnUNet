@@ -1,5 +1,6 @@
-
 import torch
+
+from nnunetv2.experiment_planning.plan_and_preprocess_entrypoints import plan_and_preprocess
 
 from nnunetv2.run.run_training_api import run_training
 
@@ -45,11 +46,12 @@ def run_training_entry():
                     help="Use this to set the device the training should run with. Available options are 'cuda' "
                          "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
                          "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
-    parser.add_argument('--gpu_index', type=int, default=3, required=False,
+    parser.add_argument('--gpu_index', type=int, default=0, required=False,
                         help="Select the index of the gpu to use")
     args = parser.parse_args()
 
-    assert args.device in ['cpu', 'cuda', 'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
+    assert args.device in ['cpu', 'cuda', 'mps'], (f'-device must be either cpu, mps or cuda. Other devices are not '
+                                                   f'tested/supported. Got: {args.device}.')
     if args.device == 'cpu':
         # let's allow torch to use hella threads
         import multiprocessing
@@ -65,7 +67,8 @@ def run_training_entry():
         device = torch.device('mps')
 
     run_training(args.dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
-                 args.num_gpus, args.use_compressed, args.npz, args.c, args.val, args.disable_checkpointing, args.val_best,
+                 args.num_gpus, args.use_compressed, args.npz, args.c, args.val, args.disable_checkpointing,
+                 args.val_best,
                  device=device)
 
 

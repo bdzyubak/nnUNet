@@ -1,3 +1,5 @@
+from typing import Union, Optional, Tuple
+
 from nnunetv2.configuration import default_num_processes
 from nnunetv2.experiment_planning.plan_and_preprocess_api import extract_fingerprints, plan_experiments, preprocess
 
@@ -197,5 +199,47 @@ def plan_and_preprocess_entry():
         preprocess(args.d, args.overwrite_plans_name, args.c, np, args.verbose)
 
 
+def plan_and_preprocess(dataset_id: Union[list[int], int],
+                        fingerprint_extractor_class_name: str = 'DatasetFingerprintExtractor',
+                        num_processes_fingerprinting: int = default_num_processes,
+                        check_dataset_integrity: bool = False,
+                        clean: bool = True, verbose: bool = False,
+                        experiment_planner_class_name: str = 'ExperimentPlanner',
+                        gpu_memory_target_in_gb: float = 20, preprocess_class_name: str = 'DefaultPreprocessor',
+                        overwrite_target_spacing: Optional[Tuple[float, ...]] = None,
+                        overwrite_plans_name: str = 'nnUNetPlans', num_processes_preprocessing: Optional[int] = None,
+                        do_preprocessing: Optional[bool] = True, configurations_to_run: Optional[list[str]] = None):
+    # bdzyubak custom entrypoint that can be called from scripts
+
+    if not isinstance(dataset_id, list):
+        dataset_id = [dataset_id]
+    if not configurations_to_run:
+        configurations_to_run = ['2d', '3d_fullres', '3d_lowres']
+
+    print("Fingerprint extraction...")
+    extract_fingerprints(dataset_ids=dataset_id, fingerprint_extractor_class_name=fingerprint_extractor_class_name,
+                         num_processes=num_processes_fingerprinting,
+                         check_dataset_integrity=check_dataset_integrity, clean=clean, verbose=verbose)
+    print("Fingerprint extraction done.")
+
+    print('Experiment planning...')
+    plan_experiments(dataset_ids=dataset_id, experiment_planner_class_name=experiment_planner_class_name,
+                     gpu_memory_target_in_gb=gpu_memory_target_in_gb, preprocess_class_name=preprocess_class_name,
+                     overwrite_target_spacing=overwrite_target_spacing, overwrite_plans_name=overwrite_plans_name)
+    print('Experiment planning done.')
+
+    # manage default np
+    if num_processes_preprocessing is None:
+        default_np = {"2d": 8, "3d_fullres": 4, "3d_lowres": 8}
+        num_processes_preprocessing = [default_np[c] if c in default_np.keys() else 4 for c in configurations_to_run]
+
+    if do_preprocessing is True:
+        print('Preprocessing...')
+        preprocess(dataset_ids=dataset_id, plans_identifier=overwrite_plans_name, configurations=configurations_to_run,
+                   num_processes=num_processes_preprocessing, verbose=verbose)
+        print('Preprocessing Done.')
+
+
 if __name__ == '__main__':
     plan_and_preprocess_entry()
+
