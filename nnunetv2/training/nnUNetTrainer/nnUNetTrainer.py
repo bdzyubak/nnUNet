@@ -68,7 +68,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 class nnUNetTrainer(object):
     def __init__(self, plans: dict, configuration: str, fold: int, dataset_json: dict, unpack_dataset: bool = True,
-                 device: torch.device = torch.device('cuda')):
+                 device: torch.device = torch.device('cuda'), infinite=True):
         # From https://grugbrain.dev/. Worth a read ya big brains ;-)
 
         # apex predator of grug is complexity
@@ -114,6 +114,7 @@ class nnUNetTrainer(object):
         self.dataset_json = dataset_json
         self.fold = fold
         self.unpack_dataset = unpack_dataset
+        self.infinite = infinite
 
         ### Setting all the folder names. We need to make sure things don't crash in case we are just running
         # inference and some of the folders may not be defined!
@@ -624,7 +625,11 @@ class nnUNetTrainer(object):
 
         dl_tr, dl_val = self.get_plain_dataloaders(initial_patch_size, dim)
 
-        allowed_num_processes = get_allowed_n_proc_DA()
+        if self.infinite:
+            allowed_num_processes = get_allowed_n_proc_DA()
+        else:
+            allowed_num_processes = 0  # Non-random sampling is not supported in multithreaded augmentation
+
         if allowed_num_processes == 0:
             mt_gen_train = SingleThreadedAugmenter(dl_tr, tr_transforms)
             mt_gen_val = SingleThreadedAugmenter(dl_val, val_transforms)
@@ -647,13 +652,13 @@ class nnUNetTrainer(object):
                                        self.configuration_manager.patch_size,
                                        self.label_manager,
                                        oversample_foreground_percent=self.oversample_foreground_percent,
-                                       sampling_probabilities=None, pad_sides=None)
+                                       sampling_probabilities=None, pad_sides=None, infinite=self.infinite)
             dl_val = nnUNetDataLoader2D(dataset_val, self.batch_size,
                                         self.configuration_manager.patch_size,
                                         self.configuration_manager.patch_size,
                                         self.label_manager,
                                         oversample_foreground_percent=self.oversample_foreground_percent,
-                                        sampling_probabilities=None, pad_sides=None)
+                                        sampling_probabilities=None, pad_sides=None, infinite=self.infinite)
         else:
             dl_tr = nnUNetDataLoader3D(dataset_tr, self.batch_size,
                                        initial_patch_size,
@@ -889,6 +894,7 @@ class nnUNetTrainer(object):
         data = batch['data']
         target = batch['target']
 
+        # print(f"Training on batch {batch['keys']}")
         data = data.to(self.device, non_blocking=True)
         if isinstance(target, list):
             target = [i.to(self.device, non_blocking=True) for i in target]
@@ -936,6 +942,7 @@ class nnUNetTrainer(object):
         data = batch['data']
         target = batch['target']
 
+        # print(f"Validating on batch {batch['keys']}")
         data = data.to(self.device, non_blocking=True)
         if isinstance(target, list):
             target = [i.to(self.device, non_blocking=True) for i in target]

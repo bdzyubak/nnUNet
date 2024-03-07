@@ -39,9 +39,16 @@ def extract_fingerprints(dataset_ids: List[int], fingerprint_extractor_class_nam
     clean = False will not actually run this. This is just a switch for use with nnUNetv2_plan_and_preprocess where
     we don't want to rerun fingerprint extraction every time.
     """
+
     fingerprint_extractor_class = recursive_find_python_class(join(nnunetv2.__path__[0], "experiment_planning"),
                                                               fingerprint_extractor_class_name,
                                                               current_module="nnunetv2.experiment_planning")
+
+    if num_processes > 1:
+        print('bdzyubak: Running fingerprint extraction in parallel mode. This seems to crash on some systems. If you '
+              'experience this, try setting num_processes to 1, and make sure my extensions to not use spawn in that '
+              'case is '
+              'present.')
     for d in dataset_ids:
         extract_fingerprint_dataset(d, fingerprint_extractor_class, num_processes, check_dataset_integrity, clean,
                                     verbose)
