@@ -205,11 +205,12 @@ def plan_and_preprocess(dataset_id: Union[list[int], int],
                         check_dataset_integrity: bool = False,
                         clean: bool = True, verbose: bool = False,
                         experiment_planner_class_name: str = 'ExperimentPlanner',
-                        gpu_memory_target_in_gb: float = 20, preprocess_class_name: str = 'DefaultPreprocessor',
+                        gpu_memory_target_in_gb: float = 10, preprocess_class_name: str = 'DefaultPreprocessor',
                         overwrite_target_spacing: Optional[Tuple[float, ...]] = None,
                         overwrite_plans_name: str = 'nnUNetPlans', num_processes_preprocessing: Optional[int] = None,
                         do_preprocessing: Optional[bool] = True, configurations_to_run: Optional[list[str]] = None):
     # bdzyubak custom entrypoint that can be called from scripts
+    print(f'The target memory footprint on the GPU is {gpu_memory_target_in_gb}. Make sure you have that much!')
 
     if not isinstance(dataset_id, list):
         dataset_id = [dataset_id]
@@ -225,7 +226,7 @@ def plan_and_preprocess(dataset_id: Union[list[int], int],
     print('Experiment planning...')
     plan_experiments(dataset_ids=dataset_id, experiment_planner_class_name=experiment_planner_class_name,
                      gpu_memory_target_in_gb=gpu_memory_target_in_gb, preprocess_class_name=preprocess_class_name,
-                     overwrite_target_spacing=overwrite_target_spacing, overwrite_plans_name=overwrite_plans_name)
+                     overwrite_target_spacing=overwrite_target_spacing, overwrite_plans_name=overwrite_plans_name, )
     print('Experiment planning done.')
 
     # manage default np
