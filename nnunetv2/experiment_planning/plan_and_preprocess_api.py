@@ -96,7 +96,7 @@ def preprocess_dataset(dataset_id: int,
                        num_processes: Union[int, Tuple[int, ...], List[int]] = (8, 4, 8),
                        verbose: bool = False) -> None:
     if not isinstance(num_processes, list):
-        num_processes = list(num_processes)
+        num_processes = [num_processes]
     if len(num_processes) == 1:
         num_processes = num_processes * len(configurations)
     if len(num_processes) != len(configurations):
