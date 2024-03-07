@@ -1,4 +1,5 @@
 import torch
+import os
 
 from nnunetv2.run.run_training_api import run_training
 
@@ -41,11 +42,16 @@ def run_training_entry():
                         help='[OPTIONAL] Set this flag to disable checkpointing. Ideal for testing things out and '
                              'you dont want to flood your hard drive with checkpoints.')
     parser.add_argument('-device', type=str, default='cuda', required=False,
-                    help="Use this to set the device the training should run with. Available options are 'cuda' "
-                         "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
-                         "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
+                        help="Use this to set the device the training should run with. Available options are 'cuda' "
+                             "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
+                             "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
     parser.add_argument('--gpu_index', type=int, default=0, required=False,
                         help="Select the index of the gpu to use")
+    parser.add_argument('--num_proc', type=str, default=0,
+                        help="Select the number of parallel data loading processors. Use 0 for non-parallel debug.")
+    parser.add_argument('--load_data_deterministically', action='store_true',
+                        help="Randomly sample loading for potentially infinite number of batches, or iterate through "
+                             "dataset (best for debug).")
     args = parser.parse_args()
 
     assert args.device in ['cpu', 'cuda', 'mps'], (f'-device must be either cpu, mps or cuda. Other devices are not '
@@ -59,15 +65,17 @@ def run_training_entry():
         # multithreading in torch doesn't help nnU-Net if run on GPU
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
-        device = torch.device('cuda:'+str(args.gpu_index))
+        device = torch.device('cuda:' + str(args.gpu_index))
         torch.cuda.set_device(device)
     else:
         device = torch.device('mps')
 
+    if args.num_proc is not None:
+        os.environ['nnUNet_n_proc_DA'] = args.num_proc
+
     run_training(args.dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
                  args.num_gpus, args.use_compressed, args.npz, args.c, args.val, args.disable_checkpointing,
-                 args.val_best,
-                 device=device)
+                 args.val_best, device=device, infinite=not args.load_data_deterministically)
 
 
 if __name__ == '__main__':
