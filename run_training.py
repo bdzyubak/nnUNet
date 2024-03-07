@@ -47,6 +47,8 @@ def run_training_entry():
                              "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
     parser.add_argument('--gpu_index', type=int, default=0, required=False,
                         help="Select the index of the gpu to use")
+    parser.add_argument('--num_proc', type=str, default=None,
+                        help="Select the number of parallel data loading processors. Use 0 for non-parallel debug.")
     parser.add_argument('--load_data_deterministically', action='store_true',
                         help="Randomly sample loading for potentially infinite number of batches, or iterate through "
                              "dataset (best for debug).")
@@ -67,6 +69,9 @@ def run_training_entry():
         torch.cuda.set_device(device)
     else:
         device = torch.device('mps')
+
+    if args.num_proc is not None:
+        os.environ['nnUNet_n_proc_DA'] = args.num_proc
 
     run_training(args.dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
                  args.num_gpus, args.use_compressed, args.npz, args.c, args.val, args.disable_checkpointing,

@@ -200,31 +200,48 @@ def verify_dataset_integrity(folder: str, num_processes: int = 8) -> None:
     reader_writer_class = determine_reader_writer_from_dataset_json(dataset_json, dataset[dataset.keys().__iter__().__next__()]['images'][0])
 
     # check whether only the desired labels are present
-    with multiprocessing.get_context("spawn").Pool(num_processes) as p:
-        result = p.starmap(
-            verify_labels,
-            zip([join(folder, 'labelsTr', i) for i in labelfiles], [reader_writer_class] * len(labelfiles),
-                [expected_labels] * len(labelfiles))
-        )
-        if not all(result):
-            raise RuntimeError(
-                'Some segmentation images contained unexpected labels. Please check text output above to see which one(s).')
+    result = _verify_labels_parallel_or_not(expected_labels, expected_num_training, folder, image_files, labelfiles,
+                                            num_modalities, num_processes, reader_writer_class)
 
-        # check whether shapes and spacings match between images and labels
-        result = p.starmap(
-            check_cases,
-            zip(image_files, labelfiles, [num_modalities] * expected_num_training,
-                [reader_writer_class] * expected_num_training)
-        )
-        if not all(result):
-            raise RuntimeError(
-                'Some images have errors. Please check text output above to see which one(s) and what\'s going on.')
+    if not all(result):
+        raise RuntimeError(
+            'Some images have errors. Please check text output above to see which one(s) and what\'s going on.')
 
     # check for nans
     # check all same orientation nibabel
     print('\n####################')
     print('verify_dataset_integrity Done. \nIf you didn\'t see any error messages then your dataset is most likely OK!')
     print('####################\n')
+
+
+def _verify_labels_parallel_or_not(expected_labels, expected_num_training, folder, image_files, labelfiles,
+                                   num_modalities, num_processes, reader_writer_class):
+    if num_processes > 1:
+        with multiprocessing.get_context("spawn").Pool(num_processes) as p:
+            result = p.starmap(
+                verify_labels,
+                zip([join(folder, 'labelsTr', i) for i in labelfiles], [reader_writer_class] * len(labelfiles),
+                    [expected_labels] * len(labelfiles))
+            )
+            if not all(result):
+                raise RuntimeError(
+                    'Some segmentation images contained unexpected labels. Please check text output above to see which one(s).')
+
+            # check whether shapes and spacings match between images and labels
+            result = p.starmap(
+                check_cases,
+                zip(image_files, labelfiles, [num_modalities] * expected_num_training,
+                    [reader_writer_class] * expected_num_training)
+            )
+    else:
+        # When parallel processing is not set, don't send to background. Used for debugging
+        result = list()
+        label_paths = [join(folder, 'labelsTr', i) for i in labelfiles]
+        reader_classes = [reader_writer_class] * len(labelfiles)
+        expected_labels = [expected_labels] * len(labelfiles)
+        for label_path, reader_class, expected_label in zip(label_paths, reader_classes, expected_labels):
+            result.append(verify_labels(label_path, reader_class, expected_label))
+    return result
 
 
 if __name__ == "__main__":
