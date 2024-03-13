@@ -2,6 +2,7 @@ from typing import Union, Optional, Tuple
 
 from nnunetv2.configuration import default_num_processes
 from nnunetv2.experiment_planning.plan_and_preprocess_api import extract_fingerprints, plan_experiments, preprocess
+from torch_utils import set_cap_gpu_memory
 
 
 def extract_fingerprint_entry():
@@ -209,8 +210,7 @@ def plan_and_preprocess(dataset_id: Union[list[int], int],
                         overwrite_target_spacing: Optional[Tuple[float, ...]] = None,
                         overwrite_plans_name: str = 'nnUNetPlans', num_processes_preprocessing: Optional[int] = None,
                         do_preprocessing: Optional[bool] = True, configurations_to_run: Optional[list[str]] = None):
-    # bdzyubak custom entrypoint that can be called from scripts
-    print(f'The target memory footprint on the GPU is {gpu_memory_target_in_gb}. Make sure you have that much!')
+    gpu_memory_target_in_gb = set_cap_gpu_memory(gpu_memory_target_in_gb)
 
     if not isinstance(dataset_id, list):
         dataset_id = [dataset_id]
