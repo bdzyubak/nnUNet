@@ -13,6 +13,8 @@ from nnunetv2.utilities.find_class_by_name import recursive_find_python_class
 from nnunetv2.utilities.plans_handling.plans_handler import PlansManager
 from nnunetv2.utilities.utils import get_filenames_of_train_images_and_targets
 
+from torch_utils import set_cap_gpu_memory
+
 
 def extract_fingerprint_dataset(dataset_id: int,
                                 fingerprint_extractor_class: Type[
@@ -62,6 +64,7 @@ def plan_experiment_dataset(dataset_id: int,
     """
     overwrite_target_spacing ONLY applies to 3d_fullres and 3d_cascade fullres!
     """
+    gpu_memory_target_in_gb = set_cap_gpu_memory(gpu_memory_target_in_gb)
     kwargs = {}
     if overwrite_plans_name is not None:
         kwargs['plans_name'] = overwrite_plans_name
